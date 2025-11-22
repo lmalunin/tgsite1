@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TelegramWebApp } from "./telegram";
 import { Controller, useForm } from "react-hook-form";
+import type { Control, FieldErrors } from "react-hook-form";
 import "./App.scss";
 
 type FormValues = {
@@ -11,6 +12,9 @@ type FormValues = {
 const REGISTRATION_HINT =
   "Эти данные увидит только бот и сразу поздоровается с вами по имени.";
 
+// URL бэкенда - можно настроить через переменные окружения
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
 type TelegramWindow = Window &
   typeof globalThis & {
     Telegram?: {
@@ -18,84 +22,49 @@ type TelegramWindow = Window &
     };
   };
 
-function App() {
-  const telegramApp = (window as TelegramWindow).Telegram?.WebApp;
-  const isTelegramEnvironment = Boolean(telegramApp);
+type RegisterResponse = {
+  success: boolean;
+  message: string;
+  firstName?: string;
+  lastName?: string;
+};
 
-  const defaultValues = useMemo<FormValues>(() => {
-    const user = telegramApp?.initDataUnsafe?.user;
-    return {
-      firstName: user?.first_name ?? "",
-      lastName: user?.last_name ?? "",
-    };
-  }, [telegramApp]);
-
-  const {
-    handleSubmit,
-    control,
-    formState: { errors, isValid },
-  } = useForm<FormValues>({
-    defaultValues,
-    mode: "onChange",
-  });
-
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle"
+function WelcomePage({
+  firstName,
+  lastName,
+}: {
+  firstName: string;
+  lastName: string;
+}) {
+  return (
+    <main className="app">
+      <div className="card welcome-card">
+        <h1>Привет, {firstName} {lastName}!</h1>
+        <p className="welcome-message">
+          Регистрация успешно завершена. Ваши данные сохранены.
+        </p>
+      </div>
+    </main>
   );
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+}
 
-  useEffect(() => {
-    if (!telegramApp) {
-      return;
-    }
-    telegramApp.ready();
-    telegramApp.expand();
-
-    const root = document.documentElement;
-    const theme = telegramApp.themeParams;
-    if (theme?.bg_color) root.style.setProperty("--tg-bg", theme.bg_color);
-    if (theme?.text_color)
-      root.style.setProperty("--tg-text", theme.text_color);
-    if (theme?.hint_color)
-      root.style.setProperty("--tg-muted", theme.hint_color);
-    if (theme?.button_color)
-      root.style.setProperty("--tg-accent", theme.button_color);
-    if (theme?.button_text_color)
-      root.style.setProperty("--tg-accent-text", theme.button_text_color);
-  }, [telegramApp]);
-
-  const onSubmit = handleSubmit(async (values) => {
-    setStatus("sending");
-    setStatusMessage(null);
-
-    const payload = {
-      ...values,
-      timestamp: new Date().toISOString(),
-    };
-
-    try {
-      if (telegramApp) {
-        telegramApp.sendData(JSON.stringify(payload));
-        setStatus("sent");
-        setStatusMessage("Данные отправлены боту. Окно скоро закроется.");
-
-        setTimeout(() => {
-          telegramApp.close();
-        }, 400);
-      } else {
-        console.log("Form payload:", payload);
-        setStatus("sent");
-        setStatusMessage(
-          "Форма работает. Откройте её через Telegram, чтобы завершить регистрацию."
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      setStatus("error");
-      setStatusMessage("Что-то пошло не так. Попробуйте снова.");
-    }
-  });
-
+function RegistrationForm({
+  onSubmit,
+  control,
+  errors,
+  isValid,
+  status,
+  statusMessage,
+  isTelegramEnvironment,
+}: {
+  onSubmit: (e: React.FormEvent) => void;
+  control: Control<FormValues>;
+  errors: FieldErrors<FormValues>;
+  isValid: boolean;
+  status: "idle" | "sending" | "sent" | "error";
+  statusMessage: string | null;
+  isTelegramEnvironment: boolean;
+}) {
   return (
     <main className="app">
       <header className="hero">
@@ -180,6 +149,124 @@ function App() {
         </div>
       )}
     </main>
+  );
+}
+
+function App() {
+  const telegramApp = (window as TelegramWindow).Telegram?.WebApp;
+  const isTelegramEnvironment = Boolean(telegramApp);
+
+  const defaultValues = useMemo<FormValues>(() => {
+    const user = telegramApp?.initDataUnsafe?.user;
+    return {
+      firstName: user?.first_name ?? "",
+      lastName: user?.last_name ?? "",
+    };
+  }, [telegramApp]);
+
+  const {
+    handleSubmit,
+    control,
+    formState: { errors, isValid },
+  } = useForm<FormValues>({
+    defaultValues,
+    mode: "onChange",
+  });
+
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle"
+  );
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [registeredUser, setRegisteredUser] = useState<{
+    firstName: string;
+    lastName: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!telegramApp) {
+      return;
+    }
+    telegramApp.ready();
+    telegramApp.expand();
+
+    const root = document.documentElement;
+    const theme = telegramApp.themeParams;
+    if (theme?.bg_color) root.style.setProperty("--tg-bg", theme.bg_color);
+    if (theme?.text_color)
+      root.style.setProperty("--tg-text", theme.text_color);
+    if (theme?.hint_color)
+      root.style.setProperty("--tg-muted", theme.hint_color);
+    if (theme?.button_color)
+      root.style.setProperty("--tg-accent", theme.button_color);
+    if (theme?.button_text_color)
+      root.style.setProperty("--tg-accent-text", theme.button_text_color);
+  }, [telegramApp]);
+
+  const onSubmit = handleSubmit(async (values) => {
+    setStatus("sending");
+    setStatusMessage(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: values.firstName,
+          lastName: values.lastName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Ошибка при отправке данных");
+      }
+
+      const data: RegisterResponse = await response.json();
+
+      if (data.success && data.firstName && data.lastName) {
+        // Данные успешно сохранены, показываем страницу приветствия
+        setRegisteredUser({
+          firstName: data.firstName,
+          lastName: data.lastName,
+        });
+        setStatus("sent");
+      } else {
+        throw new Error(data.message || "Неизвестная ошибка");
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus("error");
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : "Что-то пошло не так. Попробуйте снова."
+      );
+    }
+  });
+
+  // Если пользователь зарегистрирован, показываем страницу приветствия
+  if (registeredUser) {
+    return (
+      <WelcomePage
+        firstName={registeredUser.firstName}
+        lastName={registeredUser.lastName}
+      />
+    );
+  }
+
+  // Иначе показываем форму регистрации
+  return (
+    <RegistrationForm
+      onSubmit={onSubmit}
+      control={control}
+      errors={errors}
+      isValid={isValid}
+      status={status}
+      statusMessage={statusMessage}
+      isTelegramEnvironment={isTelegramEnvironment}
+    />
   );
 }
 

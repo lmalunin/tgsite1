@@ -124,6 +124,25 @@ $field-radius: 14px;
     font-size: 0.95rem;
     color: var(--tg-muted);
   }
+
+  .welcome-card {
+    text-align: center;
+    gap: 20px;
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 600;
+      color: var(--tg-text);
+    }
+
+    .welcome-message {
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--tg-muted);
+      line-height: 1.6;
+    }
+  }
 }
 
 @media (max-width: 480px) {
