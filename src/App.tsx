@@ -25,9 +25,19 @@ type TelegramWindow = Window &
 function WelcomePage({
   firstName,
   lastName,
+  debugLogs,
+  setDebugLogs,
+  showDebug,
+  setShowDebug,
+  isTelegramEnvironment,
 }: {
   firstName: string;
   lastName: string;
+  debugLogs: string[];
+  setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
+  showDebug: boolean;
+  setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
+  isTelegramEnvironment: boolean;
 }) {
   return (
     <main className="app">
@@ -39,6 +49,44 @@ function WelcomePage({
           Регистрация успешно завершена. Ваши данные сохранены.
         </p>
       </div>
+
+      {/* Панель отладки на странице приветствия */}
+      {isTelegramEnvironment && (
+        <div className="debug-panel">
+          <button
+            type="button"
+            onClick={() => setShowDebug(!showDebug)}
+            className="debug-toggle"
+          >
+            {showDebug ? "🔽 Скрыть логи" : "🔼 Показать логи"}
+          </button>
+          {showDebug && (
+            <div className="debug-logs">
+              <div className="debug-header">
+                <strong>Логи отладки:</strong>
+                <button
+                  type="button"
+                  onClick={() => setDebugLogs([])}
+                  className="debug-clear"
+                >
+                  Очистить
+                </button>
+              </div>
+              {debugLogs.length === 0 ? (
+                <p className="debug-empty">Логи пусты</p>
+              ) : (
+                <div className="debug-content">
+                  {debugLogs.map((log, idx) => (
+                    <div key={idx} className="debug-log-line">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
@@ -256,7 +304,7 @@ function App() {
   const onSubmit = handleSubmit(async (values) => {
     setStatus("sending");
     setStatusMessage(null);
-    setDebugLogs([]); // Очищаем логи при новой отправке
+    // НЕ очищаем логи - они должны сохраняться при переходе на страницу приветствия
 
     const payload = {
       firstName: values.firstName,
@@ -328,6 +376,11 @@ function App() {
       <WelcomePage
         firstName={registeredUser.firstName}
         lastName={registeredUser.lastName}
+        debugLogs={debugLogs}
+        setDebugLogs={setDebugLogs}
+        showDebug={showDebug}
+        setShowDebug={setShowDebug}
+        isTelegramEnvironment={isTelegramEnvironment}
       />
     );
   }
