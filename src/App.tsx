@@ -210,16 +210,38 @@ function App() {
     try {
       if (telegramApp) {
         // Используем встроенный механизм Telegram WebApp для отправки данных
-        telegramApp.sendData(JSON.stringify(payload));
+        const dataString = JSON.stringify(payload);
+        console.log("Sending data to bot via sendData():", dataString);
+        console.log("telegramApp available:", !!telegramApp);
+        console.log(
+          "telegramApp.sendData available:",
+          typeof telegramApp.sendData === "function"
+        );
 
-        // Ждем подтверждения от бота через событие
-        // Бот получит данные, сохранит в db.json и отправит подтверждение
-        // Используем небольшую задержку для обработки на стороне бота
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        try {
+          telegramApp.sendData(dataString);
+          console.log("sendData() called successfully with data:", dataString);
+
+          // Важно: после sendData() данные отправляются в бот
+          // Но для гарантии доставки можно использовать небольшое ожидание
+          // или закрыть WebApp (но мы не закрываем по требованию)
+        } catch (sendError) {
+          console.error("Error calling sendData():", sendError);
+          throw sendError;
+        }
+
+        // Небольшая задержка для обработки на стороне Telegram/бота
+        // В реальности данные должны прийти мгновенно, но даем время на обработку
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // После отправки данных через sendData(), бот получит их,
         // сохранит в db.json и отправит подтверждение в чат
         // Показываем страницу приветствия только после успешной отправки
+        console.log(
+          "Showing welcome page for:",
+          values.firstName,
+          values.lastName
+        );
         setRegisteredUser({
           firstName: values.firstName,
           lastName: values.lastName,
