@@ -255,6 +255,12 @@ function App() {
   const telegramApp = (window as TelegramWindow).Telegram?.WebApp;
   const isTelegramEnvironment = Boolean(telegramApp);
 
+  // Проверяем URL параметры для страницы приветствия
+  const urlParams = new URLSearchParams(window.location.search);
+  const isWelcomePage = urlParams.get("welcome") === "1";
+  const welcomeFirstName = urlParams.get("firstName") || "";
+  const welcomeLastName = urlParams.get("lastName") || "";
+
   const defaultValues = useMemo<FormValues>(() => {
     const user = telegramApp?.initDataUnsafe?.user;
     return {
@@ -276,10 +282,6 @@ function App() {
     "idle"
   );
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [registeredUser, setRegisteredUser] = useState<{
-    firstName: string;
-    lastName: string;
-  } | null>(null);
   // Панель отладки для просмотра логов в Telegram WebApp
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [showDebug, setShowDebug] = useState(false);
@@ -336,32 +338,26 @@ function App() {
         );
 
         try {
+          // Используем sendData() для отправки данных боту
+          // WebApp закроется автоматически после sendData()
+          // Бот сохранит данные и отправит кнопку "Продолжить" для открытия страницы приветствия
           addDebugLog("🚀 Вызов sendData()...");
+          addDebugLog(
+            "⚠️ Внимание: WebApp закроется автоматически после sendData()"
+          );
+          addDebugLog("💡 Бот сохранит данные и отправит кнопку 'Продолжить'");
+
+          // Отправляем данные через sendData()
+          // WebApp закроется автоматически
+          // Бот получит данные, сохранит в db.json и отправит кнопку "Продолжить"
           telegramApp.sendData(dataString);
           addDebugLog("✅ sendData() вызван успешно!");
+          addDebugLog("💡 WebApp закроется, бот отправит кнопку 'Продолжить'");
 
-          // Данные отправлены боту через sendData()
-          // Бот получит данные, сохранит в db.json и отправит приветствие в чат
-          // Даем время боту на обработку (2 секунды для надежности)
-          addDebugLog("⏳ Ожидание обработки ботом (2 сек)...");
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          addDebugLog("⏱️ Задержка завершена");
-
-          // После отправки данных через sendData(), бот получит их,
-          // сохранит в db.json и отправит приветствие в чат
-          // Показываем страницу приветствия (оптимистично, предполагая успешное сохранение)
-          addDebugLog(
-            `👋 Показ страницы приветствия для: ${values.firstName} ${values.lastName}`
-          );
-          addDebugLog(
-            "💡 Примечание: проверьте чат с ботом для подтверждения сохранения"
-          );
-
-          setRegisteredUser({
-            firstName: values.firstName,
-            lastName: values.lastName,
-          });
           setStatus("sent");
+          setStatusMessage(
+            "Данные отправлены! WebApp закроется, затем нажмите кнопку 'Продолжить' в чате."
+          );
         } catch (sendError) {
           const errorMsg = `❌ Ошибка при вызове sendData(): ${sendError}`;
           addDebugLog(errorMsg);
@@ -387,12 +383,13 @@ function App() {
     }
   });
 
-  // Если пользователь зарегистрирован, показываем страницу приветствия
-  if (registeredUser) {
+  // Если это страница приветствия из URL параметров (после сохранения в БД)
+  // Бот открывает WebApp через кнопку "Продолжить" с параметрами
+  if (isWelcomePage && welcomeFirstName && welcomeLastName) {
     return (
       <WelcomePage
-        firstName={registeredUser.firstName}
-        lastName={registeredUser.lastName}
+        firstName={welcomeFirstName}
+        lastName={welcomeLastName}
         debugLogs={debugLogs}
         setDebugLogs={setDebugLogs}
         showDebug={showDebug}
