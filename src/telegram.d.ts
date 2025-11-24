@@ -16,10 +16,13 @@ export interface TelegramThemeParams {
   secondary_bg_color?: string;
 }
 
+export interface TelegramWebAppInitData {
+  user?: TelegramUser;
+  start_param?: string;
+}
+
 export interface TelegramWebApp {
-  initDataUnsafe?: {
-    user?: TelegramUser;
-  };
+  initDataUnsafe?: TelegramWebAppInitData;
   colorScheme?: "light" | "dark";
   themeParams?: TelegramThemeParams;
   ready: () => void;

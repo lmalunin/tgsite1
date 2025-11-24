@@ -4,10 +4,19 @@ import type { TelegramWindow, FormValues } from "./types";
 import { RegistrationForm } from "./components/RegistrationForm";
 import { WelcomePage } from "./components/WelcomePage";
 import "./App.scss";
+import { decodeStartParam } from "./utils/startParam";
+
+const DEFAULT_MESSAGE_API_URL = "";
 
 function App() {
   const telegramApp = (window as TelegramWindow).Telegram?.WebApp;
   const isTelegramEnvironment = Boolean(telegramApp);
+
+  const clientConfig = useMemo(
+    () => decodeStartParam(telegramApp?.initDataUnsafe?.start_param ?? null),
+    [telegramApp]
+  );
+  const messageApiUrl = clientConfig.backend ?? DEFAULT_MESSAGE_API_URL;
 
   // Проверяем URL параметры для страницы приветствия
   const urlParams = new URLSearchParams(window.location.search);
@@ -149,6 +158,7 @@ function App() {
         showDebug={showDebug}
         setShowDebug={setShowDebug}
         isTelegramEnvironment={isTelegramEnvironment}
+        messageApiUrl={messageApiUrl}
       />
     );
   }

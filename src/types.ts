@@ -42,5 +42,6 @@ export type WelcomePageProps = {
   showDebug: boolean;
   setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
   isTelegramEnvironment: boolean;
+  messageApiUrl: string;
 };
 

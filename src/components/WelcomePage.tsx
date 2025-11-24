@@ -10,6 +10,7 @@ export function WelcomePage({
   showDebug,
   setShowDebug,
   isTelegramEnvironment,
+  messageApiUrl,
 }: WelcomePageProps) {
   const [messageText, setMessageText] = useState("");
   const [messageStatus, setMessageStatus] = useState<
@@ -27,16 +28,13 @@ export function WelcomePage({
     setMessageStatusText(null);
 
     try {
-      const response = await fetch(
-        "https://dry-memes-chew.loca.lt/api/message",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ text: messageText.trim() }),
-        }
-      );
+      const response = await fetch(messageApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: messageText.trim() }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
