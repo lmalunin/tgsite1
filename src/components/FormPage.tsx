@@ -1,11 +1,11 @@
 import { Controller } from "react-hook-form";
-import type { RegistrationFormProps } from "../types";
 import { DebugPanel } from "./DebugPanel";
+import type { FormPageProps } from "../types";
 
 const REGISTRATION_HINT =
   "Эти данные увидит только бот и сразу поздоровается с вами по имени.";
 
-export function RegistrationForm({
+export function FormPage({
   onSubmit,
   control,
   errors,
@@ -17,12 +17,12 @@ export function RegistrationForm({
   setDebugLogs,
   showDebug,
   setShowDebug,
-}: RegistrationFormProps) {
+}: FormPageProps) {
   return (
     <main className="app">
       <header className="hero">
-        <p className="eyebrow">Регистрация</p>
-        <h1>Заполните форму</h1>
+        <p className="eyebrow">Анкета</p>
+        <h1>Заполните анкету</h1>
         <p className="intro">
           {REGISTRATION_HINT} Пожалуйста, укажите реальные имя и фамилию.
         </p>
@@ -90,8 +90,16 @@ export function RegistrationForm({
         >
           {status === "sending" ? "Отправляем..." : "Отправить"}
         </button>
+
         {statusMessage && (
-          <p className={`status status-${status}`}>{statusMessage}</p>
+          <div className={`status status-${status}`}>
+            <p>{statusMessage}</p>
+            {status === "error" && (
+              <p style={{ fontSize: "0.8rem", marginTop: "8px" }}>
+                Пожалуйста, убедитесь что вы открыли бота через Telegram
+              </p>
+            )}
+          </div>
         )}
       </form>
 
@@ -114,4 +122,3 @@ export function RegistrationForm({
     </main>
   );
 }
-

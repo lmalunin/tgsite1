@@ -22,6 +22,7 @@ export interface TelegramWebAppInitData {
 }
 
 export interface TelegramWebApp {
+  initData?: string; // ДОБАВИТЬ ЭТУ СТРОКУ
   initDataUnsafe?: TelegramWebAppInitData;
   colorScheme?: "light" | "dark";
   themeParams?: TelegramThemeParams;
@@ -40,4 +41,3 @@ declare global {
 }
 
 export {};
-

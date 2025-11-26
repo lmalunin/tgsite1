@@ -1,5 +1,6 @@
 export type ClientConfig = {
   backend?: string;
+  chatId?: number;
 };
 
 const BASE64_URL_PATTERN = /-/g;
@@ -23,20 +24,37 @@ export function decodeStartParam(value?: string | null): ClientConfig {
     const decoded = decodeBase64Url(value);
 
     try {
-      const raw = JSON.parse(decoded) as ClientConfig | string;
+      const raw = JSON.parse(decoded) as ClientConfig | string | any;
+
+      // Если это строка - используем как backend
       if (typeof raw === "string") {
         return { backend: raw };
       }
+
+      // Если это объект с полем backend
       if (typeof raw?.backend === "string") {
-        return { backend: raw.backend };
+        return {
+          backend: raw.backend,
+          chatId: raw.chatId || raw.c, // поддерживаем оба формата
+        };
       }
-      if ("b" in (raw as Record<string, unknown>)) {
-        const backendValue = (raw as Record<string, unknown>).b;
-        if (typeof backendValue === "string") {
-          return { backend: backendValue };
-        }
+
+      // Если это объект с полем b (сокращенный формат)
+      if ("b" in raw) {
+        return {
+          backend: raw.b,
+          chatId: raw.chatId || raw.c,
+        };
+      }
+
+      // Пытаемся извлечь chatId из других полей
+      if (raw.chatId || raw.c) {
+        return {
+          chatId: raw.chatId || raw.c,
+        };
       }
     } catch {
+      // Если не JSON, используем как backend URL
       return { backend: decoded };
     }
   } catch (error) {
@@ -45,4 +63,3 @@ export function decodeStartParam(value?: string | null): ClientConfig {
 
   return {};
 }
-

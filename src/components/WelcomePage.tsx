@@ -1,116 +1,47 @@
-import { useEffect, useState } from "react";
-import type { WelcomePageProps } from "../types";
 import { DebugPanel } from "./DebugPanel";
+import type { WelcomePageProps } from "../types";
 
 export function WelcomePage({
-  firstName,
-  lastName,
+  onStartRegistration,
   debugLogs,
   setDebugLogs,
   showDebug,
   setShowDebug,
   isTelegramEnvironment,
-  messageApiUrl,
 }: WelcomePageProps) {
-  const [messageText, setMessageText] = useState("");
-  const [messageStatus, setMessageStatus] = useState<
-    "idle" | "sending" | "sent" | "error"
-  >("idle");
-  const [messageStatusText, setMessageStatusText] = useState<string | null>(
-    null
-  );
-
-  useEffect(() => {
-    const urlLog = `🔗 messageApiUrl: ${messageApiUrl}`;
-    setDebugLogs((prev) => [...prev, urlLog]);
-  }, [messageApiUrl, setDebugLogs]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!messageText.trim()) return;
-
-    setMessageStatus("sending");
-    setMessageStatusText(null);
-
-    try {
-      const response = await fetch(messageApiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: messageText.trim() }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Ошибка: ${response.status}`);
-      }
-
-      await response.json(); // Проверяем что ответ валидный
-      setMessageStatus("sent");
-      setMessageStatusText("Сообщение отправлено!");
-      setMessageText("");
-    } catch (error) {
-      setMessageStatus("error");
-      setMessageStatusText(
-        error instanceof Error ? error.message : "Ошибка при отправке"
-      );
-    }
-  };
+  // Получаем данные из Telegram WebApp
+  const telegramApp = (window as any).Telegram?.WebApp;
+  const user = telegramApp?.initDataUnsafe?.user;
 
   return (
     <main className="app">
       <div className="card welcome-card">
-        <h1>
-          Привет, {firstName} {lastName}!
-        </h1>
+        <h1>Добро пожаловать!</h1>
+
+        <div className="user-info">
+          <p>
+            <strong>Ваши данные из Telegram:</strong>
+          </p>
+          <p>Имя: {user?.first_name || "Не указано"}</p>
+          <p>Фамилия: {user?.last_name || "Не указано"}</p>
+          <p>Логин: @{user?.username || "Не указан"}</p>
+          <p>Телефон: {user?.phone || "Не указан"}</p>
+        </div>
+
         <p className="welcome-message">
-          Регистрация успешно завершена. Ваши данные сохранены в базу данных.
+          Для продолжения работы необходимо заполнить анкету и пройти проверку
+          данных.
         </p>
-        <p
-          className="welcome-hint"
-          style={{
-            fontSize: "0.9rem",
-            color: "var(--tg-muted)",
-            marginTop: "12px",
-          }}
+
+        <button
+          className="submit"
+          onClick={onStartRegistration}
+          style={{ marginTop: "20px" }}
         >
-          💡 Проверьте чат с ботом для подтверждения сохранения данных
-        </p>
+          📝 Заполнить анкету
+        </button>
       </div>
 
-      {/* Форма для отправки сообщения */}
-      <div className="card" style={{ marginTop: "16px" }}>
-        <h2 style={{ fontSize: "1.2rem", marginBottom: "12px" }}>
-          Отправить сообщение
-        </h2>
-        <form onSubmit={handleSendMessage}>
-          <label className="field">
-            <span>Текст сообщения</span>
-            <input
-              type="text"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Введите текст..."
-              disabled={messageStatus === "sending"}
-            />
-          </label>
-          <button
-            type="submit"
-            className="submit"
-            disabled={!messageText.trim() || messageStatus === "sending"}
-          >
-            {messageStatus === "sending" ? "Отправляем..." : "Послать"}
-          </button>
-          {messageStatusText && (
-            <p className={`status status-${messageStatus}`}>
-              {messageStatusText}
-            </p>
-          )}
-        </form>
-      </div>
-
-      {/* Панель отладки на странице приветствия */}
       {isTelegramEnvironment && (
         <DebugPanel
           debugLogs={debugLogs}

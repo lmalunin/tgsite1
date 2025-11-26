@@ -20,7 +20,16 @@ export type DebugPanelProps = {
   setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export type RegistrationFormProps = {
+export type WelcomePageProps = {
+  onStartRegistration: () => void;
+  debugLogs: string[];
+  setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
+  showDebug: boolean;
+  setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
+  isTelegramEnvironment: boolean;
+};
+
+export type FormPageProps = {
   onSubmit: (e: React.FormEvent) => void;
   control: Control<FormValues>;
   errors: FieldErrors<FormValues>;
@@ -34,14 +43,31 @@ export type RegistrationFormProps = {
   setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export type WelcomePageProps = {
-  firstName: string;
-  lastName: string;
+export type UserState = {
+  success: boolean;
+  firstName?: string;
+  lastName?: string;
+  verified?: "inprogress" | "discarded" | "approved";
+  isConfirmed?: boolean;
+  message?: string;
+};
+
+export type VerificationStatusProps = {
+  userState: UserState;
+  onCheckStatus: () => void;
   debugLogs: string[];
   setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
   showDebug: boolean;
   setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
   isTelegramEnvironment: boolean;
-  messageApiUrl: string;
 };
 
+export type ContractPageProps = {
+  userState: UserState;
+  onConfirm: () => void;
+  debugLogs: string[];
+  setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
+  showDebug: boolean;
+  setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
+  isTelegramEnvironment: boolean;
+};
